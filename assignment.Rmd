@@ -34,21 +34,41 @@ testUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 ```{r}
 trainingFile <- read.csv(url(trainUrl), na.strings=c("NA","#DIV/0!",""))
 testingFile <- read.csv(url(testUrl), na.strings=c("NA","#DIV/0!",""))
+ncol(testingFile)
+sapply(testingFile, class)
+ncol(trainingFile)
+sapply(trainingFile, class)
 ```
 ## Output
 testing file 20 obs of 160 variables
 Training file  19622 of 160 variables
 
+## Subset of meaningfull data
+
+```{r}
+classe <- trainingFile$classe
+trainingRemove <- grepl("^X|timestamp|window", names(trainingFile))
+trainingFile <- trainingFile[, !trainingRemove]
+testingRemove <- grepl("^X|timestamp|window", names(testingFile))
+testingFile <- testingFile[, !testingRemove]
+
+ncol(testingFile)
+sapply(testingFile, class)
+ncol(trainingFile)
+sapply(trainingFile, class)
+```
+
+
 ## Partitioning the training set 
 ```{r}
-inTrain <- createDataPartition(trainingFile$classe, p=0.6, list=FALSE)
+inTrain <- createDataPartition(trainingFile$classe, p=0.7, list=FALSE)
 myTraining <- trainingFile[inTrain, ]
 myTesting <- trainingFile[-inTrain, ]
 dim(myTraining); dim(myTesting)
 ```
 ##Output
-[1] 11776   160
-[1] 7846  160
+[1] 13737   154
+[1] 5885  154
 
 ## cleaning the data
 ```{r}
@@ -58,15 +78,19 @@ myTraining <- myTraining[,nzv$nzv==FALSE]
 nzv<- nearZeroVar(myTesting,saveMetrics=TRUE)
 myTesting <- myTesting[,nzv$nzv==FALSE]
 ```
-## Remove the first column
-```{r}
-myTraining <- myTraining[c(-1)]
-```
+
 ## removing NA
 ```{r}
 cleanTraining<- myTraining[, colSums(is.na(myTraining)) == 0]
 cleanTesting <- myTesting[, colSums(is.na(myTesting)) == 0]
-dim(cleanTesting);dim(cleanTraining)
+cleanTestingFile <- testingFile[, colSums(is.na(testingFile)) == 0]
+dim(cleanTesting);dim(cleanTraining);dim(cleanTestingFile)
+ncol(cleanTesting)
+sapply(cleanTesting, class)
+ncol(cleanTraining)
+sapply(cleanTraining, class)
+ncol(cleanTestingFile)
+sapply(cleanTestingFile, class)
 ```
 ##Prediction with Random Forests
 ##building the model and prediction Matrix
@@ -80,13 +104,15 @@ confusionMatrix(PredRF, myTesting$classe)
 ## random Forests
 Overall Statistics
                                           
-               Accuracy : 0.9976          
-                 95% CI : (0.9962, 0.9985)
+               Accuracy : 0.9924          
+                 95% CI : (0.9898, 0.9944)
     No Information Rate : 0.2845          
     P-Value [Acc > NIR] : < 2.2e-16       
                                           
-                  Kappa : 0.9969          
+                  Kappa : 0.9903          
  Mcnemar's Test P-Value : NA              
+
+
 ```{r}
 plot(ModelRF)
 ```
@@ -95,15 +121,15 @@ as expected RF lay good result with accurary
 ##Predicting Results on the Test Data
 ```{r}
 dim(testingFile)
-cleanTestingFile <- testingFile[, colSums(is.na(testingFile)) == 0]
 dim(cleanTestingFile)
-cleanTestingFile <- cleanTestingFile[,-1]
-dim(cleanTestingFile)
+ncol(cleanTesting)
+sapply(cleanTesting, class)
 ncol(cleanTestingFile)
-cleanTestingFile <- cleanTestingFile[,-59]
-dim(cleanTestingFile)
-ResultAssignment <- predict(ModelRF, newdata=cleanTestingFile)
-ResultAssignment
+sapply(cleanTestingFile, class)
+ncol(cleanTestingFile)
+prediction <- predict(ModelRF, newdata=cleanTestingFile)
+prediction
+
 ```
 
 
